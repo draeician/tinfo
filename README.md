@@ -1,53 +1,77 @@
-# Text Information Analyzer
+# Text Information Analyzer (tinfo)
 
-The Text Information Analyzer is a Python command-line tool that provides statistics on a text file, including token count, character count, word count, and line count. It uses the Tiktoken library for accurate token counting.
+A command-line tool for analyzing text files and directories, providing statistics about tokens, characters, words, and lines.
+
+## Features
+
+- Analyzes text files for:
+  - Token count (using OpenAI's tiktoken)
+  - Character count
+  - Word count
+  - Line count
+- Supports analyzing:
+  - Single files
+  - Multiple files
+  - Directories (recursive)
+- Smart text file detection
+- Detailed statistics and summaries
 
 ## Installation
 
-1. Clone the repository to your local machine:
+You can install `tinfo` using pipx:
 
-   ```bash
-   git clone https://github.com/your-username/text-information-analyzer.git
+```bash
+# Install pipx if you haven't already
+python -m pip install --user pipx
+python -m pipx ensurepath
 
+# Install tinfo
+pipx install .
+```
 
+## Usage
 
-Navigate to the project directory:
-cd text-information-analyzer
+```bash
+# Show version information
+tinfo --version
 
+# Analyze a single file
+tinfo file.txt
 
+# Analyze multiple files
+tinfo file1.txt file2.txt
 
-Install the required dependencies:
-pip install tiktoken
+# Analyze a directory (recursively)
+tinfo /path/to/directory
 
+# Analyze mixed paths
+tinfo file1.txt /path/to/directory file2.txt
+```
 
+## Command-line Options
 
-Usage
-To use the Text Information Analyzer, follow these steps:
+- `--version`: Show the version number and exit
+- `paths`: One or more paths to files or directories to analyze
 
+## Output
 
-Navigate to the project directory:
-cd text-information-analyzer
+For each file analyzed, tinfo will display:
+- Token count
+- Character count
+- Word count
+- Line count
 
+When analyzing multiple files, a summary of totals will be displayed at the end.
 
+## Requirements
 
-Run the script with the path to your text file as an argument:
-./tinfo.py /path/to/your_text_file.txt
+- Python 3.7 or higher
+- tiktoken package (installed automatically)
 
-Replace /path/to/your_text_file.txt with the actual path to your text file.
+## License
 
+MIT License
 
-The script will analyze the file and provide the following information:
-
-Token count: The number of tokens in the file.
-Character count: The total number of characters in the file.
-Word count: The total number of words in the file.
-Line count: The total number of lines in the file.
-
-Example
-./tinfo.py sample.txt
-
-License
-This project is licensed under the MIT License - see the LICENSE file for details.
 Acknowledgments
 
 The Tiktoken library: https://github.com/awslabs/tiktoken

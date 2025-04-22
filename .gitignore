@@ -1,0 +1,4 @@
+venv/
+
+# Cursor specific
+.cursor/rules/*.mdc

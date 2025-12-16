@@ -1,6 +1,6 @@
 import requests
 import json
-import textwrap
+import re
 
 class ShorthandCompressor:
     def __init__(self, model_name="shorthand", ollama_url="http://localhost:11434/api/generate"):
@@ -8,16 +8,13 @@ class ShorthandCompressor:
         self.ollama_url = ollama_url
 
     def _query_ollama(self, text):
-        """
-        Internal method to hit the local API.
-        """
         payload = {
             "model": self.model_name,
             "prompt": text, 
             "stream": False,
             "options": {
-                "temperature": 0.1,  # Low temp for deterministic notes
-                "num_ctx": 2048      # Ensure context window is respected
+                "temperature": 0.1,
+                "num_ctx": 4096  # Bumped to ensure room for input + output
             }
         }
         try:
@@ -25,51 +22,77 @@ class ShorthandCompressor:
             response.raise_for_status()
             return response.json().get('response', '').strip()
         except Exception as e:
-            return f"[ERROR: Compression Failed - {str(e)}]"
+            return f"[ERROR: {str(e)}]"
 
-    def compress_text(self, text):
+    def _find_safe_boundary(self, text, limit, floor):
         """
-        Compresses a single block of text. Use this for short strings.
+        Finds the best place to cut the text.
+        Priority 1: A period followed by space (Sentence end) near the limit.
+        Priority 2: A newline.
+        Priority 3: A space (Word end).
+        Fallback: Hard cut (if a single massive word exceeds the limit).
         """
-        return self._query_ollama(text)
+        if len(text) <= limit:
+            return len(text)
+
+        # Look for sentence endings (.!?) between floor and limit
+        search_zone = text[floor:limit]
+        
+        # Regex for sentence boundary (period/punc followed by space or end of string)
+        # We search from the RIGHT side of the zone to get the biggest chunk possible
+        sentence_match = list(re.finditer(r'[.!?]\s', search_zone))
+        if sentence_match:
+            # Cut after the punctuation
+            return floor + sentence_match[-1].end()
+
+        # Fallback: Look for the last space
+        last_space = text.rfind(' ', floor, limit)
+        if last_space != -1:
+            return last_space + 1 # Include the space in the first chunk
+
+        # Fallback: Hard limit
+        return limit
 
     def stream_compress(self, input_iterator, chunk_size=6000, overlap_size=500):
-        """
-        Generator that processes a massive stream of text in chunks.
-        
-        Args:
-            input_iterator: A file object or iterable of strings.
-            chunk_size: Approx characters per chunk (aim for ~1500 tokens).
-            overlap_size: How many characters from the previous chunk to replay 
-                          to preserve context (e.g. who is speaking).
-        
-        Yields:
-            Compressed string segments.
-        """
         buffer = ""
         
-        # We accumulate text until we hit the chunk_size
         for line in input_iterator:
             buffer += line
             
+            # While we have enough data to form a chunk
             while len(buffer) >= chunk_size:
-                # 1. Slice the current chunk
-                current_chunk = buffer[:chunk_size]
+                # 1. Find a safe cut point (don't cut words in half)
+                # We look for a boundary between (chunk_size - 100) and chunk_size
+                cut_point = self._find_safe_boundary(buffer, chunk_size, max(0, chunk_size - 200))
                 
-                # 2. Process
+                # 2. Slice the main chunk
+                current_chunk = buffer[:cut_point]
+                
+                # 3. Process
                 compressed = self._query_ollama(current_chunk)
                 yield compressed
                 
-                # 3. Slide the window:
-                # Keep the last 'overlap_size' chars to prepend to the next batch
-                # This ensures the model knows the context of the start of the next chunk.
-                tail = buffer[chunk_size - overlap_size : chunk_size]
-                remaining = buffer[chunk_size:]
-                buffer = tail + remaining
+                # 4. Handle Overlap
+                # We need to keep some context for the NEXT chunk.
+                # But we also don't want to cut the overlap in half.
+                remaining_text = buffer[cut_point:]
+                
+                # Calculate how much to "rewind" to get context
+                # We want the last 'overlap_size' chars of what we just processed
+                context_start = max(0, cut_point - overlap_size)
+                
+                # But ensure 'context_start' is also a safe word boundary
+                # so the overlap doesn't start with "ccubus"
+                safe_context_start = self._find_safe_boundary(buffer, context_start, max(0, context_start - 100))
+                
+                overlap_text = buffer[safe_context_start:cut_point]
+                
+                # New buffer = Overlap + Remaining
+                buffer = overlap_text + remaining_text
 
-        # Process any remaining text in the buffer
-        if buffer:
-            # If the buffer is just the overlap from the last loop, we might skip it 
-            # to avoid duplication, but usually safely processing it is better.
-            if len(buffer) > overlap_size:
+        # Process leftovers
+        if buffer.strip():
+            # If the leftover is mostly just the overlap we've already seen, skip it.
+            # Simple heuristic: if leftover is smaller than overlap * 1.1, it's probably redundant.
+            if len(buffer) > overlap_size * 1.1:
                 yield self._query_ollama(buffer)

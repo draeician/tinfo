@@ -1,0 +1,9 @@
+🦥 Unsloth: Will patch your computer to enable 2x faster free finetuning.
+🦥 Unsloth Zoo will now patch everything to make training faster!
+==((====))==  Unsloth 2025.12.5: Fast Llama patching. Transformers: 4.57.3.
+   \\   /|    NVIDIA GeForce RTX 3060. Num GPUs = 1. Max memory: 11.631 GB. Platform: Linux.
+O^O/ \_/ \    Torch: 2.9.1+cu128. CUDA: 8.6. CUDA Toolkit: 12.8. Triton: 3.5.1
+\        /    Bfloat16 = TRUE. FA [Xformers = 0.0.33.post2. FA2 = False]
+ "-____-"     Free license: http://github.com/unslothai/unsloth
+Unsloth: Fast downloading is enabled - ignore downloading bars which are red colored!
+CUDA 12.1 -> xformers requirement -> RTX 4070 & Unsloth -> CUDA 12.4 -> Standard Modern Stack -> pip default -> venv -> pip install -> Torch 2.5.1 (CUDA 12.4) -> Unsloth -> xformers -> CUDA 12.4 match -> pip install -> Unsloth -> python -c "import unsloth; print('Unsloth loaded successfully')" -> CUDA 12.4 stack -> RTX 4070 -> Unsloth -> xformers -> CUDA 12.4 -> pip default -> venv -> pip install -> Torch 2.5.1 (CUDA 12.4) -> Unsloth -> xformers -> CUDA 12.4 match -> pip install -> Unsloth -> python -c "import unsloth; print('Unsloth loaded successfully')"

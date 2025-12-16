@@ -1,0 +1,17 @@
+venv/
+.env
+
+llama.cpp/
+shorthand_gguf/
+*.gguf
+
+lora_shorthand_adapter/
+merged_shorthand_model/
+outputs/
+*.json
+*.jsonl
+
+unsloth_compiled_cache/
+
+
+ingest-compressed.md

@@ -18,15 +18,29 @@ A command-line tool for analyzing text files and directories, providing statisti
 
 ## Installation
 
-You can install `tinfo` using pipx:
+Install pipx if you haven't already:
 
 ```bash
-# Install pipx if you haven't already
 python -m pip install --user pipx
 python -m pipx ensurepath
+```
 
-# Install tinfo
+**From GitHub** (after the repo is pushed):
+
+```bash
+pipx install git+https://github.com/draeician/tinfo
+```
+
+**Local** (from the project root):
+
+```bash
 pipx install .
+```
+
+Or in a virtual environment:
+
+```bash
+pip install -e .
 ```
 
 ## Usage

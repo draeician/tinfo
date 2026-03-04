@@ -1,3 +1,10 @@
+**Shorthand** — semantic compression (dense, lossy text) and an optional Neo4j memory pipeline (compress → extract KG → ingest → recall).
+
+- **How to run it:** [SOP.md](SOP.md) — quickstarts, entrypoints, and troubleshooting.
+- **How the model was built:** [README_compression_engine.md](README_compression_engine.md) — dataset, training, merge, GGUF, Ollama.
+
+---
+
 We have been fighting to keep your system on **CUDA 12.1** because of that old `xformers` requirement you mentioned at the start. However, your hardware (RTX 4070) and Unsloth are both perfectly happy with the newer **CUDA 12.4**, which is the default for everything right now.
 
 Fighting the defaults is what is causing this dependency hell.

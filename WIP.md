@@ -1,5 +1,9 @@
 projects/shorthand_llm
 
+**Canonical run order and full usage:** see [SOP.md](SOP.md).
+
+---
+
 # Run this via python or just copy-paste into a temporary script
 python -c '
 import os

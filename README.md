@@ -1,53 +1,55 @@
-**Shorthand** — semantic compression (dense, lossy text) and an optional Neo4j memory pipeline (compress → extract KG → ingest → recall).
+[![CI](https://github.com/draeician/tinfo/actions/workflows/ci.yml/badge.svg)](https://github.com/draeician/tinfo/actions/workflows/ci.yml)
 
-- **How to run it:** [SOP.md](SOP.md) — quickstarts, entrypoints, and troubleshooting.
-- **How the model was built:** [README_compression_engine.md](README_compression_engine.md) — dataset, training, merge, GGUF, Ollama.
+# Shorthand LLM
 
----
+Semantic compression (dense, lossy text) and an optional Neo4j memory pipeline (compress → extract KG → ingest → recall).
 
-We have been fighting to keep your system on **CUDA 12.1** because of that old `xformers` requirement you mentioned at the start. However, your hardware (RTX 4070) and Unsloth are both perfectly happy with the newer **CUDA 12.4**, which is the default for everything right now.
-
-Fighting the defaults is what is causing this dependency hell.
-
-Let's stop fighting. We are going to wipe the environment and install the **Standard Modern Stack (CUDA 12.4)**. This aligns with what `pip` wants to give you by default, so it shouldn't break.
-
-### 1\. Wipe and Reset
-
-Start fresh one last time.
+## Install
 
 ```bash
-deactivate 2>/dev/null
-rm -rf venv
-python3.12 -m venv venv
+python3 -m venv venv
 source venv/bin/activate
-pip install --upgrade pip setuptools wheel
+pip install -e ".[dev]"
 ```
 
-### 2\. The "Go With The Flow" Install
-
-We will install the default versions. This will give you Torch 2.5.1 (CUDA 12.4), Unsloth, and the matching Xformers.
-
-Run this block:
+## Usage
 
 ```bash
-# 1. Install standard Torch (defaults to CUDA 12.4)
+# Compress text via Ollama
+cat logs.txt | shorthand-compress
+
+# Query the knowledge graph
+shorthand-recall "Who is Draeician?"
+
+# Ingest compressed text into Neo4j
+shorthand-ingest --input ingest-compressed.md
+
+# Dump the full graph
+shorthand-memory
+
+# Version
+python3 -m shorthand_llm --version
+```
+
+## Docs
+
+- **[SOP.md](SOP.md)** — Quickstarts, entrypoints, and troubleshooting.
+- **[README_compression_engine.md](README_compression_engine.md)** — Dataset, training, merge, GGUF, Ollama.
+
+## Training Stack (GPU only)
+
+```bash
 pip install torch torchvision torchaudio
-
-# 2. Install standard Xformers (defaults to CUDA 12.4 match)
 pip install xformers
-
-# 3. Install Unsloth (Standard)
 pip install unsloth
 ```
 
-### 3\. Verify
+See [README_compression_engine.md](README_compression_engine.md) for full training instructions.
 
-After that finishes, test the import:
+## Tests
 
 ```bash
-python -c "import unsloth; print('Unsloth loaded successfully')"
+pytest                          # unit tests only
+pytest -m integration           # include Ollama/Neo4j tests
+ruff check src/ tests/          # lint
 ```
-
-*Note: If this works, you are on the newer, faster CUDA 12.4 stack, which is better for your 4070 anyway.*
-
-

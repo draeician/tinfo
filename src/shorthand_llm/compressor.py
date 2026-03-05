@@ -1,21 +1,28 @@
+from __future__ import annotations
+
 import re
+from typing import Iterator
 
 import requests
 
 
 class ShorthandCompressor:
-    def __init__(self, model_name="shorthand", ollama_url="http://localhost:11434/api/generate"):
+    def __init__(
+        self,
+        model_name: str = "shorthand",
+        ollama_url: str = "http://localhost:11434/api/generate",
+    ) -> None:
         self.model_name = model_name
         self.ollama_url = ollama_url
 
         self.url_pattern = re.compile(r'https?://[^\s<>"]+|www\.[^\s<>"]+')
-        self.email_pattern = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
+        self.email_pattern = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b")
 
-    def _mask_entities(self, text):
-        replacements = {}
+    def _mask_entities(self, text: str) -> tuple[str, dict[str, str]]:
+        replacements: dict[str, str] = {}
         counter = 0
 
-        def replace_match(match, type_prefix):
+        def replace_match(match: re.Match[str], type_prefix: str) -> str:
             nonlocal counter
             original = match.group(0)
             token = f"__{type_prefix}_{counter}__"
@@ -28,12 +35,12 @@ class ShorthandCompressor:
 
         return text, replacements
 
-    def _unmask_entities(self, text, replacements):
+    def _unmask_entities(self, text: str, replacements: dict[str, str]) -> str:
         for token, original in replacements.items():
             text = text.replace(token, original)
         return text
 
-    def _query_ollama(self, text):
+    def _query_ollama(self, text: str) -> str:
         masked_text, entity_map = self._mask_entities(text)
 
         payload = {
@@ -54,7 +61,7 @@ class ShorthandCompressor:
 
         return self._unmask_entities(result, entity_map)
 
-    def _find_safe_boundary(self, text, limit, floor):
+    def _find_safe_boundary(self, text: str, limit: int, floor: int) -> int:
         if len(text) <= limit:
             return len(text)
 
@@ -69,7 +76,12 @@ class ShorthandCompressor:
 
         return limit
 
-    def stream_compress(self, input_iterator, chunk_size=6000, overlap_size=500):
+    def stream_compress(
+        self,
+        input_iterator: Iterator[str],
+        chunk_size: int = 6000,
+        overlap_size: int = 500,
+    ) -> Iterator[str]:
         buffer = ""
         chunks_processed = 0
 

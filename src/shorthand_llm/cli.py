@@ -8,7 +8,7 @@ import sys
 from shorthand_llm import __version__
 
 
-def compress_main():
+def compress_main() -> None:
     """Stream compression via Ollama shorthand model."""
     from shorthand_llm.compressor import ShorthandCompressor
 
@@ -40,7 +40,7 @@ def compress_main():
         sys.exit(0)
 
 
-def recall_main():
+def recall_main() -> None:
     """Query Neo4j knowledge graph."""
     import os
     import re
@@ -110,7 +110,7 @@ def recall_main():
         print("\n--- NO MEMORY FOUND ---")
 
 
-def ingest_main():
+def ingest_main() -> None:
     """Ingest compressed text into Neo4j knowledge graph."""
     import json
     import os
@@ -166,7 +166,7 @@ Output Schema:
         clean = re.sub(r"```\s*$", "", clean)
         return clean.strip()
 
-    def enforce_schema(props: dict | None) -> dict:
+    def enforce_schema(props: dict | None) -> dict[str, str]:
         clean = {}
         if not props:
             return clean
@@ -234,7 +234,7 @@ Output Schema:
     print("   > Database update complete.")
 
 
-def memory_main():
+def memory_main() -> None:
     """Dump full Neo4j knowledge graph."""
     import os
 

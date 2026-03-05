@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shorthand-llm"
+version = "0.1.0"
+description = "Semantic compression engine and Neo4j memory pipeline"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "MIT"}
+
+dependencies = [
+    "requests",
+    "neo4j",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+]
+
+[project.scripts]
+shorthand-compress = "shorthand_llm.cli:compress_main"
+shorthand-recall = "shorthand_llm.cli:recall_main"
+shorthand-ingest = "shorthand_llm.cli:ingest_main"
+shorthand-memory = "shorthand_llm.cli:memory_main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "integration: requires Ollama or Neo4j (deselect with '-m \"not integration\"')",
+]

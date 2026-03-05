@@ -8,7 +8,7 @@ load_dotenv()
 
 URI = os.getenv("NEO4J_URI", "bolt://localhost:7687")
 USER = os.getenv("NEO4J_USER", "neo4j")
-PWD = os.getenv("NEO4J_PASSWORD", "password123")
+PWD = os.getenv("NEO4J_PASSWORD", "")
 
 def extract_keywords(text):
     if re.search(r'\b(i|me|my|myself)\b', text, re.IGNORECASE):

@@ -1,0 +1,14 @@
+dense shorthand:
+RTX 3060 + RTX 4060 Ti -> split-GPU setup
+unsloth @ git+https://github.com/unslothai/unsloth.git
+xformers<0.0.27 & trl<0.9.0 & peft accelerate bitsandbytes
+generate_data_ollama.py -> shorthand_dataset.jsonl
+train_shorthand.py -> lora_shorthand_adapter
+save_merged.py -> merged_shorthand_model
+llama.cpp @ https://github.com/ggerganov/llama.cpp -> llama-quantize
+convert_hf_to_gguf.py -> shorthand_f16.gguf
+llama-quantize -> shorthand_q4km.gguf Q4_K_M
+ollama create shorthand -f Modelfile
+densify: echo "text" | densify
+virindi -> boot failed & cause:kernel panic @ 0x0001
+---

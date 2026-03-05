@@ -1,0 +1,25 @@
+Shorthand LLM — Project Status Summary (2026-03-04)
+
+CURRENT STATE: Functional but unpackaged.
+
+The compression engine works end-to-end:
+- Fine-tuned Llama-3-8B via QLoRA (Unsloth), converted to GGUF, deployed via Ollama as "shorthand" model.
+- stream_compress.py, densify (bash), and compress.py (GPU) all produce dense text.
+- openwebui-chat-compression.py handles OpenWebUI chat export → compressed JSONL.
+- shorthand_lib.py provides the ShorthandCompressor class with entity masking and chunked streaming.
+
+The memory pipeline works end-to-end:
+- graph_ingest.py extracts knowledge graph JSON via Ollama (qwen2.5-coder) and pushes to Neo4j.
+- recall.py and check_memory.py query Neo4j.
+- memory_tool.py wraps recall.py for programmatic use.
+
+WHAT'S MISSING:
+- No Python package structure (flat scripts, no pyproject.toml, no __init__.py, no __version__).
+- No --version flag on any CLI.
+- No tests.
+- No CI/CD.
+- .gitignore incomplete (missing secret-prevention entries).
+- Hardcoded fallback password ("password123") in recall.py and check_memory.py.
+
+ROADMAP: 6 tasks defined in .crules/tasks/wip/ (001 through 006).
+Priority order: 003 (gitignore/secrets) → 001 (package structure) → 002 (CLI --version) → 004 (tests) → 005 (CI) → 006 (type hints).

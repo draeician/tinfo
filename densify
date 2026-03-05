@@ -1,0 +1,19 @@
+#!/bin/bash
+# Usage: echo "text" | densify   OR   densify "text"
+
+# 1. Capture Input (Pipe or Argument)
+if [ -p /dev/stdin ]; then
+    INPUT="$(cat)"
+else
+    INPUT="$*"
+fi
+
+if [ -z "$INPUT" ]; then
+    echo "Usage: echo 'text' | densify OR densify 'text'"
+    exit 1
+fi
+
+# 2. Construct JSON safely using jq (handles quotes/newlines)
+# Then pipe to curl -> ollama -> jq (extract response)
+jq -n --arg p "$INPUT" '{model: "shorthand", prompt: $p, stream: false, options: {temperature: 0.1}}' | \
+curl -s -d @- http://localhost:11434/api/generate | jq -r .response

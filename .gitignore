@@ -1,20 +1,43 @@
 venv/
-.env
+.venv/
 
+# Secrets and credentials (GIT_POLICY)
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+serviceAccountKey.json
+
+# Model artifacts
 llama.cpp/
 shorthand_gguf/
 *.gguf
-
 lora_shorthand_adapter/
 merged_shorthand_model/
 outputs/
+
+# Data files
 *.json
 *.jsonl
-
-unsloth_compiled_cache/
-
-
+dense_context.txt
+graph_dump.json
+training_data.txt
 ingest-compressed.md
-
 friday-chat-compress.txt
 friday-chat.txt
+
+# Build / cache
+unsloth_compiled_cache/
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+
+# Crules specific
+.cursor/rules/*.mdc
+.claude/rules/*.md
+.github/instructions/*.instructions.md

@@ -79,18 +79,21 @@ standalone `tinfo-parser.py` / `tinfo-parse.py` helper).
 tinfo-parse --version
 tinfo-parse report.txt
 tinfo-parse -t 500 --sort tokens --descend report.txt
-cat report.txt | tinfo-parse -s --sort path
-tinfo-parse -f report.txt -t 100 --summary --sort filename --ascend
+cat report.txt | tinfo-parse --sort path
+tinfo-parse -f report.txt -t 100 --sort filename --ascend
 ```
 
-Example stdout:
+Example stdout (token count left column, path right):
 
 ```text
-/path/to/big.py: 1540 tokens
-/path/to/README.md: 609 tokens
+1,540  /path/to/big.py
+  609  /path/to/README.md
 
 Summary: 2 files, 2149 total tokens
+Note: total is the sum of per-file header claims (not whole-dump size). Running tinfo on a repo2text dump includes packaging (markers, fences, title) and is typically higher.
 ```
+
+The summary is always printed so you can reconcile against `tinfo` on the same dump file (whole-file tokens ≈ sum of claims + packaging).
 
 ## Command-line Options
 
@@ -105,7 +108,7 @@ Summary: 2 files, 2149 total tokens
 - `files`: Input files with token-report lines (default: stdin)
 - `-f` / `--file`: Single input file (overrides positional `files`)
 - `-t` / `--token-limit`: Keep rows with tokens **above** this value (default: 0)
-- `-s` / `--summary`: Print file count and total tokens
+- `-s` / `--summary`: Compatibility flag (summary + packaging note always print)
 - `--sort [tokens|filename|path]`: Sort results (default field: `tokens`)
 - `--ascend` / `--descend`: Sort direction (with `--sort`)
 
@@ -123,7 +126,9 @@ When analyzing multiple files, a summary of totals will be displayed at the end.
 
 ### `tinfo-parse`
 
-One line per matching report row: `path: N tokens`, plus optional summary.
+One line per matching report row: **tokens (left column)** then **path (right)**,
+then always a summary (file count + sum of claims) and a packaging note for
+reconciling with whole-dump `tinfo`.
 
 ## Requirements
 

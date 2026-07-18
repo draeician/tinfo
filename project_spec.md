@@ -24,7 +24,8 @@ Scaffolded and filled by Grok `/init` (Skeleton Swarm) from README and package m
 - **Analyze (`tinfo`)**: `PYTHONPATH=src python3 -m tinfo.cli <path> [path…]`
 - **Parse (`tinfo-parse`)**: filter/sort `###--- path N tokens ---###` lines from files/stdin
   - `./tinfo-parse [files…]` or `PYTHONPATH=src python3 -m tinfo.parse …`
-  - Flags: `-f`, `-t/--token-limit`, `-s/--summary`, `--sort`, `--ascend`/`--descend`
+  - Flags: `-f`, `-t/--token-limit`, `-s/--summary` (compat; summary always on), `--sort`, `--ascend`/`--descend`
+  - Always prints file count + sum of claims and a packaging note (vs whole-dump `tinfo`)
 - **Tests**: none yet — introduce `pytest` under `tests/` when adding a suite
 - **Install**:
   - Local venv: `pip install -e .` (from repo root)

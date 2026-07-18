@@ -68,19 +68,40 @@ def filter_files(
     return filtered
 
 
-def print_results(filtered_files: Sequence[FileStat], show_summary: bool) -> None:
-    """Print filtered rows and an optional count/token summary."""
-    for file_stat in filtered_files:
-        print(f"{file_stat['path']}: {file_stat['tokens']} tokens")
+def format_summary(filtered_files: Sequence[FileStat]) -> str:
+    """Build the count/token summary line for filtered rows."""
+    file_count = len(filtered_files)
+    total_tokens = sum(int(f["tokens"]) for f in filtered_files)
+    plural = "s" if file_count != 1 else ""
+    return f"Summary: {file_count} file{plural}, {total_tokens} total tokens"
 
-    if show_summary and filtered_files:
-        file_count = len(filtered_files)
-        total_tokens = sum(int(f["tokens"]) for f in filtered_files)
-        plural = "s" if file_count != 1 else ""
-        print(
-            f"\nSummary: {file_count} file{plural}, "
-            f"{total_tokens} total tokens"
-        )
+
+PACKAGING_NOTE = (
+    "Note: total is the sum of per-file header claims (not whole-dump size). "
+    "Running tinfo on a repo2text dump includes packaging (markers, fences, "
+    "title) and is typically higher."
+)
+
+
+def format_token_rows(filtered_files: Sequence[FileStat]) -> List[str]:
+    """Format rows as left-column tokens, right-column path."""
+    if not filtered_files:
+        return []
+    width = max(len(f"{int(f['tokens']):,}") for f in filtered_files)
+    return [
+        f"{int(f['tokens']):>{width},}  {f['path']}"
+        for f in filtered_files
+    ]
+
+
+def print_results(filtered_files: Sequence[FileStat]) -> None:
+    """Print filtered rows (tokens left, path right), summary, and note."""
+    for line in format_token_rows(filtered_files):
+        print(line)
+
+    print()
+    print(format_summary(filtered_files))
+    print(PACKAGING_NOTE)
 
 
 def read_input_lines(file_list: Sequence[str]) -> List[str]:
@@ -136,7 +157,10 @@ def create_parser() -> argparse.ArgumentParser:
         "-s",
         "--summary",
         action="store_true",
-        help="Show summary of filtered files (count and total tokens)",
+        help=(
+            "Accepted for compatibility; summary and packaging note are "
+            "always printed"
+        ),
     )
     parser.add_argument(
         "--sort",
@@ -188,8 +212,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     filtered_files = filter_files(data, args.token_limit, sort_type, ascending)
     if not filtered_files:
         print(f"No files found with token count above {args.token_limit}.")
+        print()
+        print(format_summary(filtered_files))
+        print(PACKAGING_NOTE)
     else:
-        print_results(filtered_files, args.summary)
+        print_results(filtered_files)
 
     return 0
 

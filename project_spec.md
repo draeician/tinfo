@@ -21,9 +21,10 @@ Scaffolded and filled by Grok `/init` (Skeleton Swarm) from README and package m
 
 - **Smoke**: `PYTHONPATH=src python3 -m tinfo.cli --version`
   - Installed: `tinfo --version` (pipx / `pip install -e .` / Poetry script entry)
-- **Analyze**: `PYTHONPATH=src python3 -m tinfo.cli <path> [path…]`
-- **Parse (columnar tokens)**: `./tinfo-parse <path> [path…]` or `PYTHONPATH=src python3 -m tinfo.parse <path…>`
-  - Installed: `tinfo-parse <path…>` (`-x` / `--exclude` supported)
+- **Analyze (`tinfo`)**: `PYTHONPATH=src python3 -m tinfo.cli <path> [path…]`
+- **Parse (`tinfo-parse`)**: filter/sort `###--- path N tokens ---###` lines from files/stdin
+  - `./tinfo-parse [files…]` or `PYTHONPATH=src python3 -m tinfo.parse …`
+  - Flags: `-f`, `-t/--token-limit`, `-s/--summary`, `--sort`, `--ascend`/`--descend`
 - **Tests**: none yet — introduce `pytest` under `tests/` when adding a suite
 - **Install**:
   - Local venv: `pip install -e .` (from repo root)
@@ -35,14 +36,15 @@ Scaffolded and filled by Grok `/init` (Skeleton Swarm) from README and package m
 - **Layout**:
   - `src/tinfo/__init__.py` — package metadata / `__version__`
   - `src/tinfo/cli.py` — CLI, file discovery, analysis, reporting
-  - `src/tinfo/parse.py` — `tinfo-parse` CLI (token column + filename; exclude support)
+  - `src/tinfo/parse.py` — `tinfo-parse` CLI (filter/sort token-report lines; no tiktoken)
   - `tinfo-parse` — repo-root launcher for local use without install
   - `pyproject.toml` — build, deps, console scripts `tinfo` and `tinfo-parse`
-- **Module boundaries**: keep counting and path-walk helpers pure and testable; CLI `main` / `cli` wire argparse only
+- **Module boundaries**:
+  - `tinfo` / `cli.py`: analyze source files (tiktoken, discovery, detailed stats)
+  - `tinfo-parse` / `parse.py`: parse existing report lines only — do not conflate with analysis
 - **Behavior notes**:
-  - Skips known binary extensions and non-UTF-8 / null-byte content
-  - Recursive directory walk via `Path.rglob`
-  - Multi-file runs print a totals summary
+  - `tinfo`: skips known binary extensions and non-UTF-8 / null-byte content; recursive `rglob`; multi-file summary
+  - `tinfo-parse`: keeps rows with tokens **strictly greater than** `-t`; optional sort by tokens/filename/path
 - **Forbidden patterns**:
   - `pip install --break-system-packages`
   - `subprocess` with `shell=True`

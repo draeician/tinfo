@@ -1,2 +1,4 @@
-- [x] tinfo-parse.py change to tinfo-parse
-- [x] tinfo-parse - token count should be a column on the left with the filename on the right
+- [x] tinfo-parse.py change to tinfo-parse (console script / launcher, no `.py` on PATH)
+- [x] Merge standalone `tinfo-parser.py` behavior into project as `tinfo-parse`
+  - `tinfo` = file analyzer (existing detailed stats)
+  - `tinfo-parse` = filter/sort `###--- path N tokens ---###` report lines

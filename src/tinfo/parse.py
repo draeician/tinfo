@@ -1,25 +1,112 @@
 #!/usr/bin/env python3
-"""tinfo-parse: token counts with exclusion support, columnar output."""
+"""tinfo-parse: filter/sort token-report lines (not a file analyzer).
+
+Reads lines shaped like::
+
+    ###--- /path/to/file 1234 tokens ---###
+
+from files or stdin, then filters by token threshold and optional sort.
+"""
 
 from __future__ import annotations
 
 import argparse
+import re
 import sys
-from pathlib import Path
-from typing import List, Sequence, Tuple
+from typing import Dict, Iterable, List, Optional, Sequence
 
 from . import __version__
-from .cli import analyze_file, get_files_to_analyze
+
+TOKEN_LINE_RE = re.compile(
+    r"###---\s+(.+?)\s+(\d+)\s+tokens\s+---###"
+)
+
+# Parsed row: path, basename, token count
+FileStat = Dict[str, object]
+
+
+def parse_line(line: str) -> Optional[FileStat]:
+    """Extract path, filename, and token count from one report line.
+
+    Strips surrounding whitespace and optional wrapping single quotes.
+    Returns None when the line does not match the expected format.
+    """
+    cleaned_line = line.strip().strip("'")
+    match = TOKEN_LINE_RE.match(cleaned_line)
+    if not match:
+        return None
+    path, tokens = match.groups()
+    filename = path.split("/")[-1]
+    return {"path": path, "filename": filename, "tokens": int(tokens)}
+
+
+def filter_files(
+    data: Iterable[str],
+    token_limit: int,
+    sort_type: Optional[str],
+    ascending: bool,
+) -> List[FileStat]:
+    """Keep rows with tokens above token_limit; optionally sort."""
+    filtered: List[FileStat] = []
+    for line in data:
+        parsed = parse_line(line)
+        if parsed is not None and int(parsed["tokens"]) > token_limit:
+            filtered.append(parsed)
+
+    if sort_type:
+        key_map = {
+            "tokens": lambda x: int(x["tokens"]),
+            "filename": lambda x: str(x["filename"]).lower(),
+            "path": lambda x: str(x["path"]).lower(),
+        }
+        filtered = sorted(
+            filtered,
+            key=key_map[sort_type],
+            reverse=not ascending,
+        )
+
+    return filtered
+
+
+def print_results(filtered_files: Sequence[FileStat], show_summary: bool) -> None:
+    """Print filtered rows and an optional count/token summary."""
+    for file_stat in filtered_files:
+        print(f"{file_stat['path']}: {file_stat['tokens']} tokens")
+
+    if show_summary and filtered_files:
+        file_count = len(filtered_files)
+        total_tokens = sum(int(f["tokens"]) for f in filtered_files)
+        plural = "s" if file_count != 1 else ""
+        print(
+            f"\nSummary: {file_count} file{plural}, "
+            f"{total_tokens} total tokens"
+        )
+
+
+def read_input_lines(file_list: Sequence[str]) -> List[str]:
+    """Read lines from the given files, or stdin when file_list is empty.
+
+    Raises:
+        FileNotFoundError: if a path is missing.
+        OSError: on other I/O failures.
+    """
+    if not file_list:
+        return sys.stdin.readlines()
+
+    data: List[str] = []
+    for file_path in file_list:
+        with open(file_path, "r", encoding="utf-8") as handle:
+            data.extend(handle.readlines())
+    return data
 
 
 def create_parser() -> argparse.ArgumentParser:
-    """Create and return the argument parser for tinfo-parse."""
+    """Build the argparse CLI for tinfo-parse."""
     parser = argparse.ArgumentParser(
         prog="tinfo-parse",
         description=(
-            "Analyze text files and directories for token counts, "
-            "with support for excluding paths. Prints token count "
-            "(left column) and filename (right column)."
+            "Filter and sort token-report lines of the form "
+            "'###--- <path> <N> tokens ---###' from files or stdin."
         ),
     )
     parser.add_argument(
@@ -28,99 +115,81 @@ def create_parser() -> argparse.ArgumentParser:
         version=f"%(prog)s {__version__}",
     )
     parser.add_argument(
-        "paths",
-        nargs="+",
-        help="Paths to files or directories to analyze",
+        "files",
+        nargs="*",
+        help="Input files with token data (default: stdin if none given)",
     )
     parser.add_argument(
-        "-x",
-        "--exclude",
-        action="append",
-        default=[],
-        help=(
-            "Path to a file or directory to exclude from analysis. "
-            "May be specified multiple times."
-        ),
+        "-f",
+        "--file",
+        type=str,
+        help="Single input file with token data (overrides positional files)",
+    )
+    parser.add_argument(
+        "-t",
+        "--token-limit",
+        type=int,
+        default=0,
+        help="Only include rows with token count above this value (default: 0)",
+    )
+    parser.add_argument(
+        "-s",
+        "--summary",
+        action="store_true",
+        help="Show summary of filtered files (count and total tokens)",
+    )
+    parser.add_argument(
+        "--sort",
+        nargs="?",
+        const="tokens",
+        choices=["tokens", "filename", "path"],
+        help="Sort results by field (default field: tokens)",
+    )
+    sort_group = parser.add_mutually_exclusive_group()
+    sort_group.add_argument(
+        "--ascend",
+        action="store_true",
+        help="Sort ascending (default when --sort is used)",
+    )
+    sort_group.add_argument(
+        "--descend",
+        action="store_true",
+        help="Sort descending",
     )
     return parser
 
 
-def is_excluded(file_path: Path, exclude_paths: Sequence[Path]) -> bool:
-    """Return True if file_path should be excluded based on exclude_paths."""
-    for ex in exclude_paths:
-        if file_path == ex:
-            return True
-        try:
-            # If this does not raise, file_path is under the excluded directory
-            file_path.relative_to(ex)
-            return True
-        except ValueError:
-            continue
-    return False
-
-
-def format_token_rows(rows: Sequence[Tuple[int, Path]]) -> List[str]:
-    """Format (token_count, path) rows as left-column tokens, right-column path."""
-    if not rows:
-        return []
-    width = max(len(f"{tokens:,}") for tokens, _ in rows)
-    return [f"{tokens:>{width},}  {path}" for tokens, path in rows]
-
-
-def main(argv: Sequence[str] | None = None) -> int:
-    """Entry point for the tinfo-parse command with exclusion support."""
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    """CLI entry: parse args, read input, filter/print results."""
     parser = create_parser()
     args = parser.parse_args(argv)
 
-    encoding = "cl100k_base"
+    sort_type = args.sort
+    # Match original: default ascending; --descend flips when sort is active
+    ascending = not args.descend if (args.ascend or args.sort) else True
 
-    paths = [Path(p).resolve() for p in args.paths]
-    exclude_paths = [Path(p).resolve() for p in (args.exclude or [])]
-
-    files_to_analyze: List[Path] = []
-    for path in paths:
-        print(f"Scanning path: {path}", file=sys.stderr)
-        new_files = get_files_to_analyze(path)
-        if new_files:
-            files_to_analyze.extend(new_files)
+    try:
+        if args.file:
+            data = read_input_lines([args.file])
         else:
-            print(f"No analyzable files found in: {path}", file=sys.stderr)
-
-    if not files_to_analyze:
-        print("No text files found to analyze.", file=sys.stderr)
+            data = read_input_lines(args.files)
+    except FileNotFoundError as exc:
+        missing = getattr(exc, "filename", None) or args.file or "?"
+        print(f"Error: File '{missing}' not found.", file=sys.stderr)
+        return 1
+    except OSError as exc:
+        print(f"Error reading input: {exc}", file=sys.stderr)
         return 1
 
-    if exclude_paths:
-        filtered_files: List[Path] = []
-        for file_path in files_to_analyze:
-            if is_excluded(file_path, exclude_paths):
-                print(f"Skipping excluded file: {file_path}", file=sys.stderr)
-            else:
-                filtered_files.append(file_path)
-    else:
-        filtered_files = files_to_analyze
+    if not data:
+        print("Error: No input data provided.", file=sys.stderr)
+        return 1
 
+    filtered_files = filter_files(data, args.token_limit, sort_type, ascending)
     if not filtered_files:
-        print(
-            "No text files found to analyze after applying exclusions.",
-            file=sys.stderr,
-        )
-        return 1
-
-    print(f"Found {len(filtered_files)} files to analyze.", file=sys.stderr)
-
-    results: List[Tuple[int, Path]] = []
-    for file_path in filtered_files:
-        tokens, chars, words, lines = analyze_file(str(file_path), encoding)
-        if any([tokens, chars, words, lines]):
-            results.append((tokens, file_path))
-
-    if not results:
-        print("No files were analyzed successfully.", file=sys.stderr)
-        return 1
-
-    for line in format_token_rows(results):
-        print(line)
+        print(f"No files found with token count above {args.token_limit}.")
+    else:
+        print_results(filtered_files, args.summary)
 
     return 0
 

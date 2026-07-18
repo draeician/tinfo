@@ -39,17 +39,20 @@ def is_probably_text_file(file_path: Path) -> bool:
             chunk = f.read(1024)
             # Check for common binary file signatures
             if chunk.startswith(b'\x00') or b'\x00' in chunk[:1000]:
-                print(f'Skipping likely binary file: {file_path}')
+                print(f'Skipping likely binary file: {file_path}', file=sys.stderr)
                 return False
             # Try decoding as UTF-8
             try:
                 chunk.decode('utf-8')
                 return True
             except UnicodeDecodeError:
-                print(f'Skipping file with invalid UTF-8 encoding: {file_path}')
+                print(
+                    f'Skipping file with invalid UTF-8 encoding: {file_path}',
+                    file=sys.stderr,
+                )
                 return False
     except Exception as e:
-        print(f'Error checking file type for {file_path}: {str(e)}')
+        print(f'Error checking file type for {file_path}: {str(e)}', file=sys.stderr)
         return False
 
 def read_file(file_path):
@@ -94,10 +97,10 @@ def analyze_file(file_path: str, encoding: str) -> Tuple[int, int, int, int]:
             count_lines(file_content)
         )
     except FileNotFoundError:
-        print(f'Error: File not found: {file_path}')
+        print(f'Error: File not found: {file_path}', file=sys.stderr)
         return (0, 0, 0, 0)
     except Exception as e:
-        print(f'Error processing {file_path}: {str(e)}')
+        print(f'Error processing {file_path}: {str(e)}', file=sys.stderr)
         return (0, 0, 0, 0)
 
 def get_files_to_analyze(path: Path) -> List[Path]:
@@ -113,7 +116,7 @@ def get_files_to_analyze(path: Path) -> List[Path]:
         List of Path objects to analyze
     """
     if not path.exists():
-        print(f'Error: Path does not exist: {path}')
+        print(f'Error: Path does not exist: {path}', file=sys.stderr)
         return []
         
     if path.is_file():
@@ -126,9 +129,9 @@ def get_files_to_analyze(path: Path) -> List[Path]:
                 if is_probably_text_file(file_path):
                     files.append(file_path)
     except PermissionError as e:
-        print(f'Error: Permission denied accessing {path}: {str(e)}')
+        print(f'Error: Permission denied accessing {path}: {str(e)}', file=sys.stderr)
     except Exception as e:
-        print(f'Error traversing directory {path}: {str(e)}')
+        print(f'Error traversing directory {path}: {str(e)}', file=sys.stderr)
     
     return files
 

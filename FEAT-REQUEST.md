@@ -1,0 +1,2 @@
+- [x] tinfo-parse.py change to tinfo-parse
+- [x] tinfo-parse - token count should be a column on the left with the filename on the right

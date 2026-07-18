@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+"""Local launcher for tinfo-parse (package entry: tinfo.parse:cli)."""
+
+import os
+import sys
+
+# Prefer the in-tree package when run from the repo root without install.
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "src"))
+
+from tinfo.parse import cli
+
+if __name__ == "__main__":
+    cli()

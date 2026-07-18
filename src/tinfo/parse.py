@@ -1,24 +1,26 @@
 #!/usr/bin/env python3
-import sys
-import os
+"""tinfo-parse: token counts with exclusion support, columnar output."""
+
+from __future__ import annotations
+
 import argparse
+import sys
 from pathlib import Path
-from typing import List
+from typing import List, Sequence, Tuple
 
-# Add the 'src' directory to the path so it can find the 'tinfo' package
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
-
-from tinfo import __version__
-from tinfo.cli import analyze_file, get_files_to_analyze
+from . import __version__
+from .cli import analyze_file, get_files_to_analyze
 
 
-def create_parser_with_exclude() -> argparse.ArgumentParser:
+def create_parser() -> argparse.ArgumentParser:
     """Create and return the argument parser for tinfo-parse."""
     parser = argparse.ArgumentParser(
+        prog="tinfo-parse",
         description=(
-            "Analyze text files and directories for token, character, word, "
-            "and line counts, with support for excluding paths."
-        )
+            "Analyze text files and directories for token counts, "
+            "with support for excluding paths. Prints token count "
+            "(left column) and filename (right column)."
+        ),
     )
     parser.add_argument(
         "--version",
@@ -43,7 +45,7 @@ def create_parser_with_exclude() -> argparse.ArgumentParser:
     return parser
 
 
-def is_excluded(file_path: Path, exclude_paths: List[Path]) -> bool:
+def is_excluded(file_path: Path, exclude_paths: Sequence[Path]) -> bool:
     """Return True if file_path should be excluded based on exclude_paths."""
     for ex in exclude_paths:
         if file_path == ex:
@@ -57,80 +59,76 @@ def is_excluded(file_path: Path, exclude_paths: List[Path]) -> bool:
     return False
 
 
-def main() -> int:
+def format_token_rows(rows: Sequence[Tuple[int, Path]]) -> List[str]:
+    """Format (token_count, path) rows as left-column tokens, right-column path."""
+    if not rows:
+        return []
+    width = max(len(f"{tokens:,}") for tokens, _ in rows)
+    return [f"{tokens:>{width},}  {path}" for tokens, path in rows]
+
+
+def main(argv: Sequence[str] | None = None) -> int:
     """Entry point for the tinfo-parse command with exclusion support."""
-    parser = create_parser_with_exclude()
-    args = parser.parse_args()
+    parser = create_parser()
+    args = parser.parse_args(argv)
 
     encoding = "cl100k_base"
 
-    # Resolve input and exclusion paths to absolute paths
     paths = [Path(p).resolve() for p in args.paths]
     exclude_paths = [Path(p).resolve() for p in (args.exclude or [])]
 
-    # Collect all files to analyze
     files_to_analyze: List[Path] = []
     for path in paths:
-        print(f"Scanning path: {path}")
+        print(f"Scanning path: {path}", file=sys.stderr)
         new_files = get_files_to_analyze(path)
         if new_files:
             files_to_analyze.extend(new_files)
         else:
-            print(f"No analyzable files found in: {path}")
+            print(f"No analyzable files found in: {path}", file=sys.stderr)
 
     if not files_to_analyze:
-        print("\nNo text files found to analyze.")
+        print("No text files found to analyze.", file=sys.stderr)
         return 1
 
-    # Apply exclusions
     if exclude_paths:
         filtered_files: List[Path] = []
         for file_path in files_to_analyze:
             if is_excluded(file_path, exclude_paths):
-                print(f"Skipping excluded file: {file_path}")
+                print(f"Skipping excluded file: {file_path}", file=sys.stderr)
             else:
                 filtered_files.append(file_path)
     else:
         filtered_files = files_to_analyze
 
     if not filtered_files:
-        print("\nNo text files found to analyze after applying exclusions.")
+        print(
+            "No text files found to analyze after applying exclusions.",
+            file=sys.stderr,
+        )
         return 1
 
-    print(f"\nFound {len(filtered_files)} files to analyze.")
+    print(f"Found {len(filtered_files)} files to analyze.", file=sys.stderr)
 
-    total_tokens = 0
-    total_chars = 0
-    total_words = 0
-    total_lines = 0
-    successful_files = 0
-
-    # Process each file
+    results: List[Tuple[int, Path]] = []
     for file_path in filtered_files:
         tokens, chars, words, lines = analyze_file(str(file_path), encoding)
-
         if any([tokens, chars, words, lines]):
-            successful_files += 1
-            total_tokens += tokens
-            total_chars += chars
-            total_words += words
-            total_lines += lines
+            results.append((tokens, file_path))
 
-            print(f"\nFile: {file_path}")
-            print(f"Tokens: {tokens:,}")
-            print(f"Characters: {chars:,}")
-            print(f"Words: {words:,}")
-            print(f"Lines: {lines:,}")
+    if not results:
+        print("No files were analyzed successfully.", file=sys.stderr)
+        return 1
 
-    if len(filtered_files) > 1:
-        print(f"\nSummary for {successful_files} of {len(filtered_files)} files:")
-        print(f"Total Tokens: {total_tokens:,}")
-        print(f"Total Characters: {total_chars:,}")
-        print(f"Total Words: {total_words:,}")
-        print(f"Total Lines: {total_lines:,}")
+    for line in format_token_rows(results):
+        print(line)
 
     return 0
 
 
-if __name__ == "__main__":
+def cli() -> None:
+    """Console-script entry point for tinfo-parse."""
     sys.exit(main())
+
+
+if __name__ == "__main__":
+    cli()

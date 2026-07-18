@@ -45,6 +45,8 @@ pip install -e .
 
 ## Usage
 
+### `tinfo` — detailed stats
+
 ```bash
 # Show version information
 tinfo --version
@@ -62,12 +64,40 @@ tinfo /path/to/directory
 tinfo file1.txt /path/to/directory file2.txt
 ```
 
+### `tinfo-parse` — token column + filename
+
+Compact listing for sorting or piping. Status messages go to stderr; stdout is
+only `tokens  path` rows (token counts right-aligned in a left column).
+
+```bash
+tinfo-parse --version
+tinfo-parse file.txt
+tinfo-parse src/ -x src/tinfo/__pycache__
+```
+
+Example stdout:
+
+```text
+  407  /path/to/README.md
+1,540  /path/to/src/tinfo/cli.py
+```
+
 ## Command-line Options
+
+### `tinfo`
 
 - `--version`: Show the version number and exit
 - `paths`: One or more paths to files or directories to analyze
 
+### `tinfo-parse`
+
+- `--version`: Show the version number and exit
+- `paths`: One or more paths to files or directories to analyze
+- `-x` / `--exclude`: Path to exclude (file or directory); repeatable
+
 ## Output
+
+### `tinfo`
 
 For each file analyzed, tinfo will display:
 - Token count
@@ -76,6 +106,10 @@ For each file analyzed, tinfo will display:
 - Line count
 
 When analyzing multiple files, a summary of totals will be displayed at the end.
+
+### `tinfo-parse`
+
+One line per file: token count (left column), filename (right column).
 
 ## Requirements
 

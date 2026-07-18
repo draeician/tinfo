@@ -16,6 +16,7 @@ tiktoken = "^0.5.2"
 
 [tool.poetry.scripts]
 tinfo = "tinfo.cli:cli"
+tinfo-parse = "tinfo.parse:cli"
 
 [project]
 name = "tinfo"
@@ -23,3 +24,7 @@ version = "0.2.0"
 description = "A tool for analyzing text files and directories, providing statistics about tokens, characters, words, and lines."
 requires-python = ">=3.7"
 dependencies = ["tiktoken>=0.5.2"]
+
+[project.scripts]
+tinfo = "tinfo.cli:cli"
+tinfo-parse = "tinfo.parse:cli"
